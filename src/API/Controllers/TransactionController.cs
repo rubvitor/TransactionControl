@@ -55,19 +55,20 @@ public class TransactionController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddTransaction(decimal amount, string type)
+    public async Task<IActionResult> AddTransaction(decimal amount, string type, Guid id)
     {
-        string cacheKey = $"transaction:{amount}:{type}";
-        string cachedTransaction = await _redisCache.StringGetAsync(cacheKey);
-
-        if (!string.IsNullOrEmpty(cachedTransaction))
-        {
-            return Ok(JsonSerializer.Deserialize<object>(cachedTransaction));
-        }
+        string cacheKey = $"transaction:{amount}:{type}:{id}";
 
         try
         {
-            await _transactionService.AddTransactionAsync(amount, type);
+            var messageBody = JsonSerializer.Serialize(new { amount, type, id, requestTime = DateTime.UtcNow });
+            var sendMessageRequest = new SendMessageRequest
+            {
+                QueueUrl = _queueUrl,
+                MessageBody = messageBody
+            };
+            await _sqsClient.SendMessageAsync(sendMessageRequest);
+
             var response = new { message = "Transaction added successfully" };
 
             await _redisCache.StringSetAsync(cacheKey, JsonSerializer.Serialize(response), TimeSpan.FromMinutes(10));
