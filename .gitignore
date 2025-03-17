@@ -1,0 +1,10 @@
+bin/
+obj/
+.vscode/
+.idea/
+.env
+docker-compose.override.yml
+/src/.vs/
+/src/.vs/TransactionControl
+/src/.vs/TransactionControl
+/src/.vs/TransactionControl
